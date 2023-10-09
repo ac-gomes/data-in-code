@@ -48,6 +48,7 @@ data_values = [
     (10361,"2022-05-23",1,1047.99,"On Hold","S18_1129",1004,"Switzerland"),
     (10375,"2022-06-26",58,1048.47,"Disputed","S18_1342",1004,"Ireland"),
     (10388,"2022-07-11",247,1049.38,"Disputed","S18_1367",1004,"Brazil"),
+    (10401,"2023-01-23",10,1047.99,"On Hold","S18_1129",1004,"Switzerland")
 ]
 
 # COMMAND ----------
@@ -58,7 +59,7 @@ orders_df = spark.createDataFrame(data_values, schema)
 
 # COMMAND ----------
 
-# Adicionar uma nova coluna unix timestamp
+# Adicionar uma nova coluna
 orders_df = orders_df.withColumn("created_date",current_timestamp())
 orders_df = orders_df.select(
     "order_number",
@@ -70,5 +71,40 @@ orders_df = orders_df.select(
     "product_line_id",
     "country",
     unix_timestamp("created_date").alias("created_date")
-    )
-orders_df.show(5)
+)
+
+# COMMAND ----------
+
+#md
+#### Crete a DF with new orders line
+
+# COMMAND ----------
+
+data_new_lines = [
+    (12190,"2023-08-23",40,98.115,"Shipped","S10_1949",1002,"Brazil"),
+    (12191,"2023-09-22",11,951.87,"Resolved","S10_2016",1002,"Ireland"),
+    (12192,"2023-10-04",50,95.202,"In Process","S10_4698",1002,"Australia"),
+    (10401,"2023-01-23",10,1047.99,"On Hold","S18_1129",1004,"Switzerland")
+]
+
+# COMMAND ----------
+
+#Create Sales DataFrame 2
+schema = StructType(columns)
+order_new_lines_df = spark.createDataFrame(data_new_lines, schema)
+
+# COMMAND ----------
+
+# Adicionar uma nova coluna
+order_new_lines_df = order_new_lines_df.withColumn("created_date",current_timestamp())
+order_new_lines_df = order_new_lines_df.select(
+    "order_number",
+    "order_date",
+    "qty_ordered",
+    "unit_price",
+    "status",
+    "product_id",
+    "product_line_id",
+    "country",
+    unix_timestamp("created_date").alias("created_date")
+)
