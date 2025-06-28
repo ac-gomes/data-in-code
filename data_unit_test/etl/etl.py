@@ -99,3 +99,23 @@ product_catalog_df.show(5)
     .writeTo("dev.bronze.tbl_bronze_product_catalog")
     .createOrReplace()
 )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Camada Silver
+
+# COMMAND ----------
+
+spark.sql("""
+    CREATE OR REPLACE TABLE dev.silver.tbl_silver_product_catalog
+    AS
+    SELECT
+        CAST(product_id AS STRING)          AS product_id,
+        CAST(product_name AS STRING)        AS product_name,
+        CAST(category AS STRING)            AS category,
+        CAST(price AS DOUBLE)               AS price
+        
+    FROM dev.bronze.tbl_bronze_product_catalog
+
+""")
