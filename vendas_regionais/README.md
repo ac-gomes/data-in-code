@@ -1,12 +1,12 @@
 # Projeto: vendas_regionais
 
-**Versão**: 1.0 | **Data**: 2026-04-04 | **Metodologia**: SDD v2
+**Versão**: 1.0 | **Data**: 2026-04-04 | **Metodologia**: Spec-Driven Development (SDD)
 
 ---
 
 ## 📋 Visão Geral
 
-Sistema de ingestão e análise de vendas regionais a partir de arquivos Excel, com camada semântica para análise usando metodologia **SDD v2 (Structured Development Discipline)**.
+Sistema de ingestão e análise de vendas regionais a partir de arquivos Excel, com camada semântica para análise usando metodologia **Spec-Driven Development (SDD)**.
 
 ### Arquitetura
 
@@ -27,7 +27,7 @@ git clone <repo-url> data-in-code
 cd data-in-code/vendas_regionais
 ```
 
-### 2️⃣ Configurar Metodologia SDD v2 (OBRIGATÓRIO)
+### 2️⃣ Configurar Metodologia Spec-Driven Development (SDD) (OBRIGATÓRIO)
 
 **Copiar template para seu workspace**:
 
@@ -48,14 +48,14 @@ shutil.copy(
 
 **Por quê fazer isso?**
 - `.assistant_instructions.md` é lido AUTOMATICAMENTE pelos agentes IA
-- Garante que todos seguem mesma metodologia SDD v2
+- Garante que todos seguem mesma metodologia Spec-Driven Development (SDD)
 - Cada dev tem sua cópia pessoal (pode personalizar)
 
 ### 3️⃣ Explorar Documentação
 
 ```
 vendas_regionais/
-├── .assistant_instructions.template.md  ← Template SDD v2 (copiar para ~/)
+├── .assistant_instructions.template.md  ← Template SDD (copiar para ~/)
 ├── sdd_instructions.md                  ← Contexto do projeto
 ├── ARCHITECTURE_FLOW.md                 ← Fluxos visuais
 ├── AUDIT_REPORT_2026-04-04.md           ← Auditoria completa
@@ -68,24 +68,24 @@ vendas_regionais/
 
 **Leitura recomendada** (nesta ordem):
 1. `README.md` (este arquivo) ← você está aqui
-2. `.assistant_instructions.template.md` → Metodologia SDD v2
+2. `.assistant_instructions.template.md` → Metodologia Spec-Driven Development (SDD)
 3. `sdd_instructions.md` → Contexto do projeto
 4. `ARCHITECTURE_FLOW.md` → Fluxos e diagramas
 5. Features individuais em `sdd/features/{nome}/`
 
 ---
 
-## 🏗️ Estrutura do Projeto
+## 🏭️ Estrutura do Projeto
 
 ```
 vendas_regionais/
-├── .assistant_instructions.template.md  # Template SDD v2 (versionado)
+├── .assistant_instructions.template.md  # Template SDD (versionado)
 ├── sdd_instructions.md                  # Contexto local do projeto
 ├── README.md                            # Este arquivo
 ├── ARCHITECTURE_FLOW.md                 # Arquitetura híbrida
 ├── AUDIT_REPORT_2026-04-04.md           # Relatório de auditoria
 │
-├── sdd/                                 # Documentação SDD v2
+├── sdd/                                 # Documentação SDD
 │   └── features/
 │       ├── error_handler_logging/       # EHL - Logging
 │       │   ├── plan.md
@@ -117,13 +117,13 @@ vendas_regionais/
 ## 🎯 Features Implementadas
 
 ### 1. error_handler_logging (EHL)
-**Status**: ✅ 100% conforme SDD v2  
+**Status**: ✅ 100% conforme Spec-Driven Development (SDD)  
 **Função**: Infraestrutura de logging para todas as features  
 **Localização**: `sdd/features/error_handler_logging/`  
 **Notebook**: `src/logger_control`
 
 ### 2. vendas_base_ingestion (VBI)
-**Status**: ⚠️ 95% conforme SDD v2  
+**Status**: ⚠️ 95% conforme Spec-Driven Development (SDD)  
 **Função**: Ingestão Excel → Delta Table  
 **Localização**: `sdd/features/vendas_base_ingestion/`  
 **Notebook**: `src/ingest_vendas_base`  
@@ -131,7 +131,7 @@ vendas_regionais/
 **Gap**: Apenas testes automatizados pendentes
 
 ### 3. vendas_semantic_layer (VSL)
-**Status**: ⚠️ 95% conforme SDD v2 (MODELO EXEMPLAR)  
+**Status**: ⚠️ 95% conforme Spec-Driven Development (SDD) (MODELO EXEMPLAR)  
 **Função**: 4 views SQL analíticas  
 **Localização**: `sdd/features/vendas_semantic_layer/`  
 **Notebook**: `src/nb_create_semantic_views`  
@@ -144,7 +144,7 @@ vendas_regionais/
 
 ---
 
-## 📊 Conformidade SDD v2
+## 📊 Conformidade Spec-Driven Development (SDD)
 
 | Feature | Conformidade | Gap Único |
 | --- | --- | --- |
@@ -173,7 +173,7 @@ vendas_regionais/
 2. **Definir feature code** (3 letras):
    - Exemplo: `NFT` para "nova_feature_teste"
 
-3. **Seguir workflow SDD v2** (4 fases):
+3. **Seguir workflow Spec-Driven Development (SDD)** (4 fases):
    - Identificação → Leitura → Implementação → Documentação
 
 4. **Usar LogControl** (obrigatório):
@@ -191,7 +191,7 @@ vendas_regionais/
 
 1. Ler documentação da feature (plan/spec/tasks)
 2. Verificar matriz de rastreabilidade (gaps conhecidos)
-3. Implementar seguindo padrões SDD v2
+3. Implementar seguindo padrões Spec-Driven Development (SDD)
 4. Atualizar matriz e tasks.md
 
 ---
@@ -224,7 +224,7 @@ vendas_regionais/
 | [sdd_instructions.md](sdd_instructions.md) | Contexto específico do projeto |
 | [ARCHITECTURE_FLOW.md](ARCHITECTURE_FLOW.md) | Arquitetura híbrida e fluxos |
 | [AUDIT_REPORT_2026-04-04.md](AUDIT_REPORT_2026-04-04.md) | Auditoria completa do projeto |
-| [.assistant_instructions.template.md](.assistant_instructions.template.md) | Template SDD v2 (copiar para ~/.) |
+| [.assistant_instructions.template.md](.assistant_instructions.template.md) | Template SDD (copiar para ~/.) |
 
 ### Features (plan/spec/tasks/matriz)
 
@@ -247,13 +247,13 @@ vendas_regionais/
 
 ### Atualizações de Metodologia
 
-Quando a metodologia SDD v2 for atualizada:
+Quando a metodologia Spec-Driven Development (SDD) for atualizada:
 
 1. **Atualizar template**:
    ```bash
    # Editar .assistant_instructions.template.md
    git add .assistant_instructions.template.md
-   git commit -m "feat: atualizar metodologia SDD v2"
+   git commit -m "feat: atualizar metodologia Spec-Driven Development (SDD)"
    git push
    ```
 
@@ -269,9 +269,9 @@ Quando a metodologia SDD v2 for atualizada:
 
 | Aspecto | Status |
 | --- | --- |
-| **Documentação SDD v2** | ✅ 100% completa |
+| **Documentação SDD** | ✅ 100% completa |
 | **Features implementadas** | 3/3 (100%) |
-| **Conformidade SDD v2** | 90% (testes pendentes) |
+| **Conformidade SDD** | 90% (testes pendentes) |
 | **LogControl** | ✅ Implementado |
 | **Rastreabilidade** | ✅ Implementada |
 | **Testes automatizados** | ❌ 0% (gap identificado) |
@@ -286,7 +286,7 @@ Quando a metodologia SDD v2 for atualizada:
 git clone <repo-url> data-in-code
 ```
 
-### Setup SDD v2
+### Setup Spec-Driven Development (SDD)
 ```bash
 cp data-in-code/vendas_regionais/.assistant_instructions.template.md ~/.assistant_instructions.md
 ```
@@ -305,14 +305,14 @@ cp data-in-code/vendas_regionais/.assistant_instructions.template.md ~/.assistan
 
 ## 📞 Contato
 
-**Mantenedor**: data.in.code@gmail.com  
-**Metodologia**: SDD v2 (Structured Development Discipline)  
+**Mantenedor**: https://github.com/ac-gomes  
+**Metodologia**: Spec-Driven Development (SDD)  
 **Última Atualização**: 2026-04-04
 
 ---
 
 **🎯 Próximos Passos Sugeridos**:
-1. ✅ Setup SDD v2 (copiar template)
+1. ✅ Setup Spec-Driven Development (SDD) (copiar template)
 2. 📖 Ler sdd_instructions.md
 3. 🔍 Explorar vendas_semantic_layer (modelo exemplar)
 4. 🚀 Começar a trabalhar!
