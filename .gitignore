@@ -1,1 +1,4 @@
 .mypy_cache
+
+# Arquivos do projeto vendas_regionais (dados locais)
+vendas_regionais/arquivos/
