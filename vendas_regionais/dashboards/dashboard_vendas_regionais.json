@@ -1,0 +1,41 @@
+{
+  "_metadata": {
+    "nome": "Dashboard Vendas Regionais",
+    "versao": "1.0.0",
+    "data_criacao": "2026-04-19",
+    "autor": "ac-gomes",
+    "projeto": "vendas_regionais",
+    "databricks_id": "01f13c0786871fd189adb02b7e04f008",
+    "tree_node_id": "4064538371365942",
+    "path_databricks": "/Users/<USER_EMAIL>/Dashboard Vendas Regionais.lvdash.json",
+    "descricao": "Dashboard analítico replicando funcionalidades do Excel VendasRegionaisVBA.xlsm. Utiliza filtros cruzados globais e dataset único para análise interativa de vendas.",
+    "nota_path": "Substitua <USER_EMAIL> pelo seu email do Databricks ao usar este arquivo"
+  },
+  
+  "fonte_dados": {
+    "tabela": "workspace.vendas_regionais.vendas_base",
+    "registros": 1000,
+    "valor_total": "R$ 7.004.651,22"
+  },
+  
+  "datasets": [{
+    "name": "vendas_base_completa",
+    "query": "SELECT data_venda, mes_abrev, regiao, vendedor, codigo_vendedor, secao, valor_vendas, ano, mes FROM workspace.vendas_regionais.vendas_base ORDER BY ano, mes",
+    "observacao": "ORDER BY é CRÍTICO para ordenação cronológica"
+  }],
+  
+  "filtros_globais": [
+    {"nome": "filtro_data_venda", "tipo": "date-range", "coluna": "data_venda"},
+    {"nome": "filtro_regiao", "tipo": "multi-select", "coluna": "regiao"},
+    {"nome": "filtro_mes", "tipo": "multi-select", "coluna": "mes_abrev"},
+    {"nome": "filtro_vendedor", "tipo": "multi-select", "coluna": "vendedor"},
+    {"nome": "filtro_trimestre", "tipo": "single-select", "coluna_calculada": "Trimestre"}
+  ],
+  
+  "widgets": [
+    {"nome": "vendas_por_vendedor", "tipo": "bar", "xAxis": "vendedor", "yAxis": "SUM(valor_vendas)"},
+    {"nome": "vendas_por_regiao", "tipo": "bar", "xAxis": "regiao", "yAxis": "SUM(valor_vendas)"},
+    {"nome": "vendas_por_mes", "tipo": "line", "xAxis": "mes_abrev", "yAxis": "SUM(valor_vendas)"},
+    {"nome": "vendas_por_secao", "tipo": "bar-horizontal", "xAxis": "SUM(valor_vendas)", "yAxis": "secao"}
+  ]
+}

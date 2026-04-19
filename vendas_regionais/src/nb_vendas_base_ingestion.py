@@ -1,10 +1,12 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Vendas Base Ingestion
-# MAGIC 
+# MAGIC
 # MAGIC Ingestão de dados da aba "Base" do arquivo VendasRegionaisVBA.xlsm para tabela Delta.
-# MAGIC 
+# MAGIC
 # MAGIC **Feature**: vendas_base_ingestion  
+# MAGIC **Documentação**: `sdd/features/vendas_base_ingestion/` (plan, spec, tasks, traceability)  
+# MAGIC **Testes**: `tests/test_vendas_base_ingestion.md`  
 # MAGIC **Autor**: Sistema de Ingestão Automatizado  
 # MAGIC **Última Atualização**: 2024
 
@@ -15,18 +17,21 @@
 
 # COMMAND ----------
 
-# Importar bibliotecas
+# CÉLULA 1: Importar LogControl (ISOLADO)
+# LogControl está centralizado no repositório raiz (fora do projeto vendas_regionais)
+%run ./logger_control
+
+# COMMAND ----------
+
+# CÉLULA 2: Importar bibliotecas Python
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp, col, lit, sum as spark_sum
 from pyspark.sql.types import StringType, IntegerType, DecimalType, DateType, TimestampType
 import pandas as pd
 
-# Importar LogControl
-%run "/Users/data.in.code@gmail.com/data-in-code/vendas_regionais/sdd/features/error_handler_logging/src/logger_control"
-
 # COMMAND ----------
 
-# Configurar logger
+# CÉLULA 3: Configurar logger
 logger = LogControl(
     logger_name="vendas_base_ingestion",
     tbl_name="main.vendas_regionais.tb_logs_ingestion"
@@ -44,8 +49,12 @@ logger.log_info("=== INICIANDO PROCESSO DE INGESTÃO ===")
 try:
     logger.log_info("Iniciando leitura do arquivo Excel")
     
-    # Path do arquivo
-    excel_path = "/Workspace/Users/data.in.code@gmail.com/data-in-code/vendas_regionais/arquivos/VendasRegionaisVBA.xlsm"
+    # Path do arquivo (absoluto - arquivo está fora do contexto de código)
+    # Relativo ao projeto: arquivos/VendasRegionaisVBA.xlsm
+    # Obter usuário dinamicamente para evitar hard-coding
+    current_user = spark.conf.get("spark.databricks.workspaceUrl").split("//")[0] + "//" + dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+    workspace_base = f"/Workspace/Users/{dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()}/data-in-code/vendas_regionais"
+    excel_path = f"{workspace_base}/arquivos/VendasRegionaisVBA.xlsm"
     sheet_name = "Base"
     
     # Ler com pandas
