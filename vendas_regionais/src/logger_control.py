@@ -213,7 +213,7 @@ class LogControl:
 # MAGIC
 # MAGIC 1. Click the link above or navigate to:
 # MAGIC    ```
-# MAGIC    /Workspace/Users/data.in.code@gmail.com/data-in-code/vendas_regionais/sdd/features/error_handler_logging/src/tests/test_logger_control
+# MAGIC    /Workspace/Users/<USER_EMAIL>/data-in-code/vendas_regionais/tests/test_logger_control
 # MAGIC    ```
 # MAGIC
 # MAGIC 2. The test notebook will:

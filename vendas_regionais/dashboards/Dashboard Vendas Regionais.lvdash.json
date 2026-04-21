@@ -1,0 +1,614 @@
+{
+  "datasets": [
+    {
+      "name": "vendas_base_completa",
+      "displayName": "Vendas Base Completa",
+      "queryLines": [
+        "SELECT\n",
+        "  data_venda,\n",
+        "  mes_abrev,\n",
+        "  regiao,\n",
+        "  vendedor,\n",
+        "  codigo_vendedor,\n",
+        "  secao,\n",
+        "  valor_vendas,\n",
+        "  ano,\n",
+        "  mes\n",
+        "FROM\n",
+        "  workspace.vendas_regionais.vendas_base\n",
+        "ORDER BY\n",
+        "  ano,\n",
+        "  mes"
+      ],
+      "columns": [
+        {
+          "displayName": "Ordem Mês",
+          "description": "Ordem numérica dos meses para ordenação cronológica",
+          "expression": "CASE `mes_abrev`\n  WHEN 'JAN' THEN 1\n  WHEN 'FEV' THEN 2\n  WHEN 'MAR' THEN 3\n  WHEN 'ABR' THEN 4\n  WHEN 'MAI' THEN 5\n  WHEN 'JUN' THEN 6\n  WHEN 'JUL' THEN 7\n  WHEN 'AGO' THEN 8\n  WHEN 'SET' THEN 9\n  WHEN 'OUT' THEN 10\n  WHEN 'NOV' THEN 11\n  WHEN 'DEZ' THEN 12\n  ELSE 0\nEND"
+        },
+        {
+          "displayName": "Mês Ordenado",
+          "description": "Mês com prefixo numérico para ordenação cronológica",
+          "expression": "CONCAT(LPAD(CAST(`mes` AS STRING), 2, '0'), '_', `mes_abrev`)"
+        },
+        {
+          "displayName": "Trimestre",
+          "description": "Classificação trimestral baseada no mês (Q1, Q2, Q3, Q4)",
+          "expression": "CASE \n  WHEN `mes` IN (1, 2, 3) THEN 'Q1'\n  WHEN `mes` IN (4, 5, 6) THEN 'Q2'\n  WHEN `mes` IN (7, 8, 9) THEN 'Q3'\n  WHEN `mes` IN (10, 11, 12) THEN 'Q4'\n  ELSE 'Desconhecido'\nEND"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "8f7d2959",
+      "displayName": "Page 1",
+      "layout": [
+        {
+          "widget": {
+            "name": "vendas_por_vendedor",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "vendedor",
+                      "expression": "`vendedor`"
+                    },
+                    {
+                      "name": "sum(valor_vendas)",
+                      "expression": "SUM(`valor_vendas`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Desempenho do Vendedor",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "vendedor",
+                  "displayName": "Vendedor",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(valor_vendas)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Total Vendas",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "vendedor",
+                  "legend": {
+                    "hide": true
+                  },
+                  "displayName": "Vendedor",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "vendas_por_regiao",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "regiao",
+                      "expression": "`regiao`"
+                    },
+                    {
+                      "name": "sum(valor_vendas)",
+                      "expression": "SUM(`valor_vendas`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Vendas por Região",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "regiao",
+                  "displayName": "Região",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(valor_vendas)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Total Vendas",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "regiao",
+                  "legend": {
+                    "hide": true
+                  },
+                  "displayName": "Região",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "vendas_por_mes",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "mes_abrev",
+                      "expression": "`mes_abrev`"
+                    },
+                    {
+                      "name": "sum(valor_vendas)",
+                      "expression": "SUM(`valor_vendas`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Vendas por Mês",
+                "showTitle": true
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "mes_abrev",
+                  "axis": {
+                    "labelAngle": 0
+                  },
+                  "displayName": "Mês",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "JAN",
+                        "FEV",
+                        "MAR",
+                        "ABR",
+                        "MAI"
+                      ]
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(valor_vendas)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Total Vendas",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "vendas_por_secao",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "secao",
+                      "expression": "`secao`"
+                    },
+                    {
+                      "name": "sum(valor_vendas)",
+                      "expression": "SUM(`valor_vendas`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Desempenho da Categoria",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "sum(valor_vendas)",
+                  "displayName": "Total Vendas",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "secao",
+                  "displayName": "Seção",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "secao",
+                  "legend": {
+                    "hide": true
+                  },
+                  "displayName": "Seção",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 7,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "global_filters",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "filtro_data_venda",
+            "queries": [
+              {
+                "name": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_data_venda",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "data_venda",
+                      "expression": "`data_venda`"
+                    },
+                    {
+                      "name": "data_venda_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Data da Venda",
+                "showTitle": true
+              },
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "data_venda",
+                    "queryName": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_data_venda"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filtro_regiao",
+            "queries": [
+              {
+                "name": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_regiao",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "regiao",
+                      "expression": "`regiao`"
+                    },
+                    {
+                      "name": "regiao_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Região",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "regiao",
+                    "queryName": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_regiao"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filtro_mes",
+            "queries": [
+              {
+                "name": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_mes_abrev",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "mes_abrev",
+                      "expression": "`mes_abrev`"
+                    },
+                    {
+                      "name": "mes_abrev_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Mês",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "mes_abrev",
+                    "queryName": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_mes_abrev"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filtro_vendedor",
+            "queries": [
+              {
+                "name": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_vendedor",
+                "query": {
+                  "datasetName": "vendas_base_completa",
+                  "fields": [
+                    {
+                      "name": "vendedor",
+                      "expression": "`vendedor`"
+                    },
+                    {
+                      "name": "vendedor_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Vendedor",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "vendedor",
+                    "queryName": "dashboards/01f13c0786871fd189adb02b7e04f008/datasets/01f13c0989201482ac9d75447f9d0b29_vendedor"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filtro_trimestre",
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Trimestre",
+                "showTitle": true,
+                "showDescription": false
+              },
+              "disallowAll": false,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": []
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 3,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#E8EEF7",
+        "dark": "#1A2332"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#2D3E50"
+      },
+      "widgetBorderColor": {
+        "light": "#D1D9E6",
+        "dark": "#3A4D62"
+      },
+      "fontColor": {
+        "light": "#2C3E50",
+        "dark": "#FFFFFF"
+      },
+      "selectionColor": {
+        "light": "#4A90E2",
+        "dark": "#5B9BD5"
+      },
+      "visualizationColors": [
+        "#5B9BD5",
+        "#70AD47",
+        "#FFC000",
+        "#ED7D31",
+        "#A5A5A5",
+        "#4472C4",
+        "#264478",
+        "#9E480E",
+        "#636363",
+        "#997300"
+      ],
+      "widgetHeaderAlignment": "LEFT",
+      "fontFamily": "Arial"
+    },
+    "applyModeEnabled": false
+  }
+}

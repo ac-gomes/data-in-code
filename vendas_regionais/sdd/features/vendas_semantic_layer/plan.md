@@ -1,8 +1,11 @@
 # Plan: Vendas Semantic Layer
 
+**Versão**: 2.0.0 (atualizada para v3.1.0 do ingest_vendas_base)  
+**Última Atualização**: 2026-04-19
+
 ## Propósito
 
-Criar uma camada semântica de views SQL que agregam os dados da tabela base de vendas (`main.vendas_regionais.tb_vendas_base`) para facilitar análises e dashboards. As views replicam as agregações pré-calculadas encontradas na aba "Base Grafico" do arquivo Excel original.
+Criar uma camada semântica de **temp views SQL** que agregam os dados da **tabela Delta** `workspace.vendas_regionais.vendas_base` para facilitar análises e dashboards. As views replicam as agregações pré-calculadas encontradas na aba "Base Grafico" do arquivo Excel original.
 
 ## Contexto de Negócio
 
@@ -52,32 +55,49 @@ Essas agregações eliminam a necessidade de recalcular totais repetidamente e g
 
 ## Estratégia de Implementação
 
-### Abordagem Técnica
+### Abordagem Técnica - v2.0.0
 
-1. **SQL Puro**: Views serão criadas usando SQL puro (CREATE OR REPLACE VIEW)
-2. **Nomenclatura**: Prefixo `vw_` para indicar que são views (não tabelas materializadas)
-3. **Schema**: Todas as views no schema `main.vendas_regionais`
-4. **Fonte de Dados**: Tabela `main.vendas_regionais.tb_vendas_base`
+**MUDANÇA ARQUITETURAL (v3.1.0 do ingest_vendas_base):**
 
-### Benefícios
+1. **Fonte de Dados**: Tabela Delta `workspace.vendas_regionais.vendas_base` (Unity Catalog)
+2. **Leitura Direta**: `spark.table("workspace.vendas_regionais.vendas_base")` (não mais via %run)
+3. **Temp Views**: Criadas com `createOrReplaceTempView()` (disponíveis apenas na sessão Spark)
+4. **Nomenclatura**: Prefixo `vw_` para indicar que são views agregadas
+5. **Independência**: Notebook pode ser executado de forma independente (não precisa executar outro notebook primeiro)
 
-* **Performance**: Views são leves e não duplicam dados
-* **Consistência**: Sempre refletem dados atualizados da tabela base
+### Fluxo de Execução
+
+```
+1. Ler tabela Delta (workspace.vendas_regionais.vendas_base)
+2. Validar que a tabela existe e tem dados
+3. Criar temp view base (vendas_base_temp)
+4. Criar 4 temp views agregadas usando SQL
+5. Exibir resultados e estatísticas
+6. Validações de qualidade
+```
+
+### Benefícios da Nova Arquitetura
+
+* **Independência**: Não precisa executar outro notebook via %run
+* **Performance**: Lê da fonte de verdade (tabela Delta persistida)
 * **Simplicidade**: Lógica SQL clara e manutenível
-* **Reusabilidade**: Views podem ser consumidas por múltiplos dashboards e queries
+* **Reusabilidade**: Views podem ser consultadas durante toda a sessão
+* **Sem Duplicação**: Não mantém dados em memória duplicados
 
-### Justificativa para Views (não Tabelas Materializadas)
+### Justificativa para Temp Views (não Views Persistidas)
 
-* **Volume Baixo**: ~90 registros na base não justificam materialização
+* **Volume Baixo**: ~1000 registros na base não justificam persistência
 * **Agregações Simples**: GROUP BY simples são extremamente rápidos
-* **Atualização Frequente**: Views sempre refletem dados mais recentes
-* **Economia de Armazenamento**: Não duplicam dados
+* **Exploração**: Temp views são ideais para análise interativa
+* **Economia de Armazenamento**: Não duplicam dados no Unity Catalog
+* **Flexibilidade**: Podem ser recriadas/modificadas facilmente durante análise
 
 ## Logging e Tratamento de Erros
 
 ### Padrão LogControl
 
 * **Obrigatório**: Uso da classe `LogControl` para todos os logs de criação das views
+* **Tabela de Logs**: `main.vendas_regionais.tb_logs_semantic`
 * **Rastreabilidade**: Captura de exceções durante criação das views
 * **Níveis de Log**:
   * INFO: Início da criação de cada view
@@ -85,32 +105,33 @@ Essas agregações eliminam a necessidade de recalcular totais repetidamente e g
   * WARNING: Divergências entre agregações e Excel
   * ERROR: Falhas na criação das views
 
-### Validação Contra Excel
+### Validação da Tabela Base
 
-Após criar as views, validar que os totais correspondem aos valores da aba "Base Grafico":
-
-* Ler aba "Base Grafico" do Excel
-* Comparar totais calculados vs. totais nas views
-* Logar warnings se houver divergências > 0.01 (tolerância para arredondamento)
+* Verificar que `workspace.vendas_regionais.vendas_base` existe
+* Validar que a tabela tem dados (count > 0)
+* Exibir schema e estatísticas básicas
+* Logar erro se a tabela estiver vazia
 
 ## Dependências
 
-* **Tabela Base**: `main.vendas_regionais.tb_vendas_base` (criada pela feature vendas_base_ingestion)
+* **Tabela Base**: `workspace.vendas_regionais.vendas_base` (criada pela feature vendas_base_ingestion v3.1.0)
 * **Feature**: error_handler_logging (LogControl)
-* **Arquivo de Referência**: VendasRegionaisVBA.xlsm (aba "Base Grafico" para validação)
+* **Unity Catalog**: workspace (catálogo), vendas_regionais (schema)
+* **Compute**: Databricks Serverless
 
 ## Métricas de Sucesso
 
-1. ✅ Todas as 4 views criadas sem erros
-2. ✅ Totais nas views correspondem à aba "Base Grafico" (margem de erro < 0.01%)
-3. ✅ Todas as views são consultáveis via SQL
+1. ✅ Todas as 4 temp views criadas sem erros
+2. ✅ Totais nas views são consistentes internamente
+3. ✅ Todas as views são consultáveis via SQL na sessão
 4. ✅ Logs de criação persistidos via LogControl
-5. ✅ Testes automatizados passam 100%
+5. ✅ Notebook pode ser executado de forma independente
+6. ✅ Validação da tabela base implementada
 
 ## Próximos Passos
 
-1. Criar especificação técnica detalhada (`spec.md`) com SQL completo
-2. Definir tarefas granulares de implementação (`tasks.md`)
-3. Implementar SQL de criação das views
-4. Validar agregações contra Excel
-5. Criar testes automatizados
+1. ✅ Especificação técnica detalhada (`spec.md`) atualizada
+2. ✅ Tarefas granulares de implementação (`tasks.md`) atualizadas
+3. ✅ Implementação alinhada com v3.1.0 do ingest_vendas_base
+4. 📋 Validar execução completa do notebook
+5. 📋 Atualizar tasks.md com estado real pós-mudanças

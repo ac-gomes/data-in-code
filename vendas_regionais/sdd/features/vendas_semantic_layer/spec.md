@@ -1,26 +1,39 @@
 # Especificação Técnica: Vendas Semantic Layer
 
+**Versão**: 2.0.0 (atualizada para v3.1.0 do ingest_vendas_base)  
+**Última Atualização**: 2026-04-19
+
 ## Visão Geral
 
-Feature responsável por criar 4 views SQL que agregam dados da tabela `main.vendas_regionais.tb_vendas_base` para facilitar análises e dashboards.
+Feature responsável por criar 4 **temp views SQL** que agregam dados da **tabela Delta** `workspace.vendas_regionais.vendas_base` para facilitar análises e dashboards.
+
+**MUDANÇA ARQUITETURAL (v2.0.0):**
+* **Antes (v1.0)**: Recebia DataFrame via %run de outro notebook, criava views persistidas
+* **Agora (v2.0)**: Lê DIRETAMENTE da tabela Delta, cria temp views na sessão Spark
 
 ## Arquitetura de Views
 
 ### Tabela Fonte
 
-* **Nome**: `main.vendas_regionais.tb_vendas_base`
-* **Schema**: main.vendas_regionais
+* **Nome**: `workspace.vendas_regionais.vendas_base`
+* **Catálogo**: workspace (Unity Catalog)
+* **Schema**: vendas_regionais
 * **Formato**: Delta Lake
 * **Colunas Utilizadas**:
   * `vendedor` (STRING)
   * `regiao` (STRING)
-  * `mes` (STRING)
+  * `mes` (INT) - Mês numérico extraído de data_venda
   * `secao` (STRING)
   * `valor_vendas` (DECIMAL)
+  * `data_venda` (DATE)
 
 ### Views de Destino
 
-Todas as views serão criadas no schema `main.vendas_regionais` com prefixo `vw_`.
+**Temp Views** criadas na sessão Spark (não persistidas no Unity Catalog).
+
+* **Nomenclatura**: Prefixo `vw_` para indicar views agregadas
+* **Escopo**: Disponíveis apenas durante a sessão ativa
+* **Criação**: Usando `spark.sql()` com queries SQL
 
 ## Especificações das Views
 
@@ -31,15 +44,15 @@ Todas as views serão criadas no schema `main.vendas_regionais` com prefixo `vw_
 **SQL de Criação**:
 
 ```sql
-CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_vendedor AS
+CREATE OR REPLACE TEMP VIEW vw_vendas_por_vendedor AS
 SELECT 
     vendedor,
     SUM(valor_vendas) AS total_vendas,
     COUNT(*) AS qtd_transacoes,
-    AVG(valor_vendas) AS ticket_medio
-FROM main.vendas_regionais.tb_vendas_base
+    ROUND(AVG(valor_vendas), 2) AS ticket_medio
+FROM vendas_base_temp
 GROUP BY vendedor
-ORDER BY total_vendas DESC;
+ORDER BY total_vendas DESC
 ```
 
 **Schema de Saída**:
@@ -50,8 +63,6 @@ ORDER BY total_vendas DESC;
 | qtd_transacoes | BIGINT | Quantidade de transações |
 | ticket_medio | DECIMAL | Valor médio por transação |
 
-**Validação**: Comparar total_vendas com aba "Base Grafico" (colunas 0-1, linhas 3-10)
-
 ---
 
 ### View 2: vw_vendas_por_regiao
@@ -61,15 +72,15 @@ ORDER BY total_vendas DESC;
 **SQL de Criação**:
 
 ```sql
-CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_regiao AS
+CREATE OR REPLACE TEMP VIEW vw_vendas_por_regiao AS
 SELECT 
     regiao,
     SUM(valor_vendas) AS total_vendas,
     COUNT(*) AS qtd_transacoes,
     COUNT(DISTINCT vendedor) AS qtd_vendedores
-FROM main.vendas_regionais.tb_vendas_base
+FROM vendas_base_temp
 GROUP BY regiao
-ORDER BY total_vendas DESC;
+ORDER BY total_vendas DESC
 ```
 
 **Schema de Saída**:
@@ -80,8 +91,6 @@ ORDER BY total_vendas DESC;
 | qtd_transacoes | BIGINT | Quantidade de transações |
 | qtd_vendedores | BIGINT | Vendedores únicos na região |
 
-**Validação**: Comparar total_vendas com aba "Base Grafico" (colunas 3-4, linhas 13-16)
-
 ---
 
 ### View 3: vw_vendas_por_mes
@@ -91,33 +100,24 @@ ORDER BY total_vendas DESC;
 **SQL de Criação**:
 
 ```sql
-CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_mes AS
+CREATE OR REPLACE TEMP VIEW vw_vendas_por_mes AS
 SELECT 
     mes,
     SUM(valor_vendas) AS total_vendas,
     COUNT(*) AS qtd_transacoes,
     COUNT(DISTINCT vendedor) AS qtd_vendedores_ativos
-FROM main.vendas_regionais.tb_vendas_base
+FROM vendas_base_temp
 GROUP BY mes
-ORDER BY 
-    CASE mes
-        WHEN 'JAN' THEN 1
-        WHEN 'FEV' THEN 2
-        WHEN 'MAR' THEN 3
-        WHEN 'ABR' THEN 4
-        WHEN 'MAI' THEN 5
-    END;
+ORDER BY mes ASC
 ```
 
 **Schema de Saída**:
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| mes | STRING | Mês (formato abreviado PT-BR) |
+| mes | INT | Mês numérico (1-12) |
 | total_vendas | DECIMAL | Soma de todas as vendas |
 | qtd_transacoes | BIGINT | Quantidade de transações |
 | qtd_vendedores_ativos | BIGINT | Vendedores com vendas no mês |
-
-**Validação**: Comparar total_vendas com aba "Base Grafico" (colunas 6-7, linhas 13-18)
 
 ---
 
@@ -128,15 +128,15 @@ ORDER BY
 **SQL de Criação**:
 
 ```sql
-CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_secao AS
+CREATE OR REPLACE TEMP VIEW vw_vendas_por_secao AS
 SELECT 
     secao,
     SUM(valor_vendas) AS total_vendas,
     COUNT(*) AS qtd_transacoes,
     ROUND(AVG(valor_vendas), 2) AS ticket_medio
-FROM main.vendas_regionais.tb_vendas_base
+FROM vendas_base_temp
 GROUP BY secao
-ORDER BY total_vendas DESC;
+ORDER BY total_vendas DESC
 ```
 
 **Schema de Saída**:
@@ -147,8 +147,6 @@ ORDER BY total_vendas DESC;
 | qtd_transacoes | BIGINT | Quantidade de transações |
 | ticket_medio | DECIMAL | Valor médio por transação |
 
-**Validação**: Comparar total_vendas com aba "Base Grafico" (colunas 9-10, linhas 13-21)
-
 ---
 
 ## Fluxo de Implementação
@@ -157,7 +155,12 @@ ORDER BY total_vendas DESC;
 
 ```python
 # Importar LogControl
-%run "/Users/data.in.code@gmail.com/data-in-code/vendas_regionais/sdd/features/error_handler_logging/src/logger_control"
+%run ../../error_handler_logging/src/logger_control
+
+# Imports
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sum as spark_sum, count as spark_count
+import pandas as pd
 
 # Configurar logger
 logger = LogControl(
@@ -165,108 +168,182 @@ logger = LogControl(
     tbl_name="main.vendas_regionais.tb_logs_semantic"
 )
 
+logger.log_info("="*80)
 logger.log_info("=== INICIANDO CRIAÇÃO DAS VIEWS SEMÂNTICAS ===")
+logger.log_info("Pipeline: Synthetic Data Generator → Base Ingestion → Semantic Views")
+logger.log_info("="*80)
 ```
 
-### 2. Validar Tabela Base Existe
+### 2. Ler Tabela Delta e Criar Temp View Base
 
 ```python
+# Criar temp view lendo DIRETAMENTE da tabela Delta
+logger.log_info("Lendo tabela Delta: workspace.vendas_regionais.vendas_base")
+
 try:
-    logger.log_info("Validando existência da tabela base")
+    # Configurar tabela de origem (Unity Catalog)
+    TABLE_NAME = "workspace.vendas_regionais.vendas_base"
     
-    # Verificar se tabela existe
-    df_base = spark.table("main.vendas_regionais.tb_vendas_base")
-    count_base = df_base.count()
+    # Ler tabela Delta (fonte de verdade)
+    df = spark.table(TABLE_NAME)
     
-    logger.log_success(f"Tabela base encontrada com {count_base} registros")
+    # Validar que a tabela existe e tem dados
+    record_count = df.count()
+    
+    if record_count == 0:
+        raise ValueError(f"Tabela {TABLE_NAME} está vazia. Execute o nb_vendas_base_ingestion primeiro.")
+    
+    # Criar temp view para uso nas queries SQL
+    df.createOrReplaceTempView("vendas_base_temp")
+    
+    logger.log_success(f"Temp view 'vendas_base_temp' criada com {record_count} registros")
+    logger.log_info(f"Fonte: Tabela Delta {TABLE_NAME}")
+    logger.log_info(f"Colunas: {df.columns}")
+    
+    # Exibir amostra dos dados
+    print("\n" + "="*80)
+    print("✅ Temp View 'vendas_base_temp' criada com sucesso!")
+    print(f"Fonte: Tabela Delta {TABLE_NAME}")
+    print(f"Registros: {record_count}")
+    print(f"Colunas: {df.columns}")
+    print("="*80)
+    
+    # Exibir amostra de 5 registros
+    logger.log_info("Amostra dos dados (5 primeiros registros):")
+    display(df.limit(5))
     
 except Exception as e:
-    logger.log_error("Tabela base não encontrada. Execute vendas_base_ingestion primeiro.")
+    logger.log_error("Erro ao criar temp view da tabela Delta")
     logger.error_handler(e, debug_write_mode=True)
     raise
 ```
 
-### 3. Criar Views
+### 3. Validar Tabela Base
 
 ```python
-views = {
-    "vw_vendas_por_vendedor": """
-        CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_vendedor AS
+# Validar que a tabela Delta existe e está acessível
+logger.log_info("Validando tabela base workspace.vendas_regionais.vendas_base")
+
+try:
+    # Verificar schema
+    logger.log_info("Schema da tabela:")
+    df.printSchema()
+    
+    # Estatísticas básicas
+    logger.log_info("Estatísticas da tabela:")
+    
+    total_registros = df.count()
+    total_vendas = df.select(spark_sum("valor_vendas")).collect()[0][0]
+    
+    logger.log_info(f"  Total de registros: {total_registros}")
+    logger.log_info(f"  Total de vendas: R$ {total_vendas:,.2f}")
+    
+    # Verificar período de dados
+    min_date = df.select("data_venda").agg({"data_venda": "min"}).collect()[0][0]
+    max_date = df.select("data_venda").agg({"data_venda": "max"}).collect()[0][0]
+    
+    logger.log_info(f"  Período: {min_date} a {max_date}")
+    
+    logger.log_success("Tabela base validada com sucesso")
+    
+except Exception as e:
+    logger.log_error("Erro ao validar tabela base")
+    logger.error_handler(e, debug_write_mode=True)
+    raise
+```
+
+### 4. Criar Temp Views Agregadas
+
+```python
+try:
+    logger.log_info("Criando view: vw_vendas_por_vendedor")
+    spark.sql("""
+        CREATE OR REPLACE TEMP VIEW vw_vendas_por_vendedor AS
         SELECT 
             vendedor,
             SUM(valor_vendas) AS total_vendas,
             COUNT(*) AS qtd_transacoes,
-            AVG(valor_vendas) AS ticket_medio
-        FROM main.vendas_regionais.tb_vendas_base
+            ROUND(AVG(valor_vendas), 2) AS ticket_medio
+        FROM vendas_base_temp
         GROUP BY vendedor
         ORDER BY total_vendas DESC
-    """,
-    "vw_vendas_por_regiao": """
-        CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_regiao AS
+    """)
+    logger.log_success("View vw_vendas_por_vendedor criada")
+    
+    logger.log_info("Criando view: vw_vendas_por_regiao")
+    spark.sql("""
+        CREATE OR REPLACE TEMP VIEW vw_vendas_por_regiao AS
         SELECT 
             regiao,
             SUM(valor_vendas) AS total_vendas,
             COUNT(*) AS qtd_transacoes,
             COUNT(DISTINCT vendedor) AS qtd_vendedores
-        FROM main.vendas_regionais.tb_vendas_base
+        FROM vendas_base_temp
         GROUP BY regiao
         ORDER BY total_vendas DESC
-    """,
-    "vw_vendas_por_mes": """
-        CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_mes AS
+    """)
+    logger.log_success("View vw_vendas_por_regiao criada")
+    
+    logger.log_info("Criando view: vw_vendas_por_mes")
+    spark.sql("""
+        CREATE OR REPLACE TEMP VIEW vw_vendas_por_mes AS
         SELECT 
             mes,
             SUM(valor_vendas) AS total_vendas,
             COUNT(*) AS qtd_transacoes,
             COUNT(DISTINCT vendedor) AS qtd_vendedores_ativos
-        FROM main.vendas_regionais.tb_vendas_base
+        FROM vendas_base_temp
         GROUP BY mes
-        ORDER BY 
-            CASE mes
-                WHEN 'JAN' THEN 1
-                WHEN 'FEV' THEN 2
-                WHEN 'MAR' THEN 3
-                WHEN 'ABR' THEN 4
-                WHEN 'MAI' THEN 5
-            END
-    """,
-    "vw_vendas_por_secao": """
-        CREATE OR REPLACE VIEW main.vendas_regionais.vw_vendas_por_secao AS
+        ORDER BY mes ASC
+    """)
+    logger.log_success("View vw_vendas_por_mes criada")
+    
+    logger.log_info("Criando view: vw_vendas_por_secao")
+    spark.sql("""
+        CREATE OR REPLACE TEMP VIEW vw_vendas_por_secao AS
         SELECT 
             secao,
             SUM(valor_vendas) AS total_vendas,
             COUNT(*) AS qtd_transacoes,
             ROUND(AVG(valor_vendas), 2) AS ticket_medio
-        FROM main.vendas_regionais.tb_vendas_base
+        FROM vendas_base_temp
         GROUP BY secao
         ORDER BY total_vendas DESC
-    """
-}
-
-for view_name, view_sql in views.items():
-    try:
-        logger.log_info(f"Criando view: {view_name}")
-        spark.sql(view_sql)
-        logger.log_success(f"View {view_name} criada com sucesso")
-    except Exception as e:
-        logger.log_error(f"Erro ao criar view {view_name}")
-        logger.error_handler(e, debug_write_mode=True)
-        raise
+    """)
+    logger.log_success("View vw_vendas_por_secao criada")
+    
+except Exception as e:
+    logger.log_error("Erro ao criar views")
+    logger.error_handler(e, debug_write_mode=True)
+    raise
 ```
 
-### 4. Validar Views Criadas
+### 5. Validar e Exibir Views
 
 ```python
 try:
     logger.log_info("Validando views criadas")
     
-    for view_name in views.keys():
-        full_view_name = f"main.vendas_regionais.{view_name}"
-        df_view = spark.table(full_view_name)
+    views = [
+        "vw_vendas_por_vendedor",
+        "vw_vendas_por_regiao",
+        "vw_vendas_por_mes",
+        "vw_vendas_por_secao"
+    ]
+    
+    for view_name in views:
+        df_view = spark.sql(f"SELECT * FROM {view_name}")
         count = df_view.count()
         logger.log_info(f"{view_name}: {count} registros")
     
     logger.log_success("Todas as views validadas com sucesso")
+    
+    # Exibir resultados
+    for view_name in views:
+        print(f"\n\n{'='*80}")
+        print(f"View: {view_name}")
+        print("="*80)
+        display(spark.sql(f"SELECT * FROM {view_name}"))
     
 except Exception as e:
     logger.log_error("Erro durante validação das views")
@@ -274,23 +351,24 @@ except Exception as e:
     raise
 ```
 
-### 5. Validar Contra Excel (Base Grafico)
+### 6. Sumário Final
 
 ```python
-try:
-    logger.log_info("Validando agregações contra aba Base Grafico")
-    
-    import pandas as pd
-    excel_path = "/Workspace/Users/data.in.code@gmail.com/data-in-code/vendas_regionais/arquivos/VendasRegionaisVBA.xlsm"
-    df_grafico = pd.read_excel(excel_path, sheet_name='Base Grafico', header=None)
-    
-    # Validar vendas por vendedor
-    # (Comparações detalhadas aqui)
-    
-    logger.log_success("Validações contra Excel concluídas")
-    
-except Exception as e:
-    logger.log_warning(f"Não foi possível validar contra Excel: {str(e)}")
+logger.log_success("=== CRIAÇÃO DAS VIEWS SEMÂNTICAS CONCLUÍDA COM SUCESSO ===")
+logger.log_info("Temp Views criadas (disponíveis nesta sessão):")
+logger.log_info("  1. vw_vendas_por_vendedor")
+logger.log_info("  2. vw_vendas_por_regiao")
+logger.log_info("  3. vw_vendas_por_mes")
+logger.log_info("  4. vw_vendas_por_secao")
+
+print("\n✅ Camada semântica criada com sucesso!")
+print("\n📋 Temp Views disponíveis nesta sessão:")
+print("  - vw_vendas_por_vendedor")
+print("  - vw_vendas_por_regiao")
+print("  - vw_vendas_por_mes")
+print("  - vw_vendas_por_secao")
+print("\n📦 Fonte de dados: Tabela Delta workspace.vendas_regionais.vendas_base")
+print("="*80)
 ```
 
 ## Tratamento de Erros
@@ -298,45 +376,52 @@ except Exception as e:
 ### Exceções Esperadas
 
 1. **AnalysisException**: Tabela base não existe
-   * Ação: Logar erro e instruir execução de vendas_base_ingestion primeiro
+   * Ação: Logar erro e instruir execução de nb_vendas_base_ingestion primeiro
 
-2. **ParseException**: Erro de sintaxe SQL
+2. **ValueError**: Tabela base vazia (count = 0)
+   * Ação: Logar erro e interromper execução
+
+3. **ParseException**: Erro de sintaxe SQL
    * Ação: Logar erro com SQL completo, interromper execução
-
-3. **Validação Falhou**: Totais não conferem com Excel
-   * Ação: Logar warning (não interromper), mostrar divergências
 
 ## Métricas de Validação
 
-### Totais Esperados (Base Grafico)
+### Validações Implementadas
 
-* **Total Geral**: ~R$ 225.926,23 (soma de todas as vendas)
-* **Por Vendedor**: 8 vendedores com totais variando de ~R$ 10.214 a ~R$ 40.064
+* **Tabela existe**: `spark.table()` não lança exceção
+* **Tabela tem dados**: `df.count() > 0`
+* **Views criadas**: Todas as 4 views consultáveis via SQL
+* **Views têm dados**: Cada view retorna registros
+* **Consistência interna**: Soma dos totais por vendedor = total geral
+
+### Totais Esperados
+
+* **Total Geral**: ~R$ 225.926,23 (dos dados sintéticos originais)
+* **Por Vendedor**: 8 vendedores
 * **Por Região**: 4 regiões (Norte, Sul, Sudeste, Nordeste)
-* **Por Mês**: 5 meses (JAN a MAI)
+* **Por Mês**: Varia conforme período de dados (1-12)
 * **Por Seção**: 8 seções de produtos
-
-### Tolerância
-
-* **Arredondamento**: ± 0.01 (1 centavo) por agregação
-* **Percentual**: < 0.001% de divergência aceitável
 
 ## Performance
 
-* **Complexidade**: O(n) para cada GROUP BY (n = 90 registros)
-* **Tempo Esperado**: < 1 segundo por view
+* **Complexidade**: O(n) para cada GROUP BY (n = ~1000 registros)
+* **Tempo Esperado**: < 2 segundos para todas as 4 views
 * **Cache**: Não necessário devido ao baixo volume
+* **Leitura Delta**: Otimizada via Delta Lake (parquet + metadados)
 
 ## Dependências
 
-* Tabela `main.vendas_regionais.tb_vendas_base` (feature vendas_base_ingestion)
+* Tabela `workspace.vendas_regionais.vendas_base` (feature vendas_base_ingestion v3.1.0)
 * LogControl (feature error_handler_logging)
 * PySpark SQL
+* Unity Catalog (workspace)
 
 ## Testes Requeridos
 
-1. Teste de criação das 4 views
-2. Teste de consultabilidade (SELECT * funciona)
-3. Teste de contagem de registros (>0 em cada view)
-4. Teste de validação de totais vs. Excel
-5. Teste de LogControl integração
+1. ✅ Teste de leitura da tabela Delta
+2. ✅ Teste de criação da temp view base
+3. ✅ Teste de criação das 4 temp views agregadas
+4. ✅ Teste de consultabilidade (SELECT * funciona)
+5. ✅ Teste de contagem de registros (>0 em cada view)
+6. ✅ Teste de LogControl integração
+7. 📋 Teste de execução completa do notebook

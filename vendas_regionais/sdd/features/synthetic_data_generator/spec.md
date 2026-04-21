@@ -134,7 +134,7 @@ Feature para geração automatizada de dados sintéticos **100% independente de 
 
 ```python
 # IMPL-SDG-C01: Import do LogControl centralizado
-%run /Workspace/Users/data.in.code@gmail.com/data-in-code/error_handler_logging/src/logger_control
+%run /Workspace/Users/data.in.code/data-in-code/error_handler_logging/src/logger_control
 
 # IMPL-SDG-C02: Imports necessários
 import pandas as pd
